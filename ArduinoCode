@@ -1,0 +1,195 @@
+#include <Servo.h>  //servo library
+Servo myservo;      // create servo object to control servo
+
+//Ultrasonic sensor variables
+int Echo = 10;  
+int Trig = 12; 
+
+//Motor 1 pins
+int enMotorA = 5; 
+int motorIn1 = 7;
+int motorIn2 = 8;
+
+//Motor 2 pins
+int enMotorB = 6; 
+int motorIn3 = 9;
+int motorIn4 = 11;
+
+//speed variables
+int speed = 200;
+int speed2 = 150;
+//int backupSpeed = 200;
+//int backupSpeed2 = 50;
+
+//Variables that hold distances recorded by the 
+//ultrasonic sensor and will be compared later
+int distanceRight = 0;
+int distanceLeft = 0;
+
+//Uses ultrasonic sensor and records distance of objects
+//in front of it
+int distanceTest(){
+  digitalWrite(Trig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trig, HIGH);
+  delayMicroseconds(20);
+  digitalWrite(Trig, LOW);
+  float distance = pulseIn(Echo, HIGH);
+  float distanceCM = 0.017 * distance;
+  //Serial.print("distance: ");
+  //Serial.print(distanceCM);
+  //Serial.println(" cm");
+  return (int)distanceCM;
+}
+
+void forward(){ //defines the forward motion of the robot
+  digitalWrite(motorIn1, HIGH);
+  digitalWrite(motorIn2, LOW);
+  
+  
+  analogWrite(enMotorA, speed);
+  
+  digitalWrite(motorIn3, HIGH);
+  digitalWrite(motorIn4, LOW);
+  
+  analogWrite(enMotorB, speed);
+}
+
+void backward(){ //defines the backwards motion of the robot
+  analogWrite(enMotorA, speed2);
+  analogWrite(enMotorB, speed2);
+  digitalWrite(motorIn1, LOW);
+  digitalWrite(motorIn2, HIGH);
+  digitalWrite(motorIn3, LOW);
+  digitalWrite(motorIn4, HIGH);
+}
+
+void right(){ //defines the right turn of the robot
+  analogWrite(enMotorA, speed);
+  analogWrite(enMotorB, speed);
+  digitalWrite(motorIn1, HIGH);
+  digitalWrite(motorIn2, LOW);
+  digitalWrite(motorIn3, LOW);
+  digitalWrite(motorIn4, LOW);
+}
+
+void left(){ //defines the left turn of the robot
+  analogWrite(enMotorA, speed);
+  analogWrite(enMotorB, speed);
+  digitalWrite(motorIn1, LOW);
+  digitalWrite(motorIn2, LOW);
+  digitalWrite(motorIn3, HIGH);
+  digitalWrite(motorIn4, LOW);
+}
+
+void halt(){ // stops all motion of the robot
+  digitalWrite(motorIn1, LOW);
+  digitalWrite(motorIn2, LOW);
+  digitalWrite(motorIn3, LOW);
+  digitalWrite(motorIn4, LOW);
+}
+
+void drawCircleRight(){ //draws a circle in the right direction to simulate boredom
+right();
+delay(2000);
+}
+/*
+void drawCircleLeft(){
+left();
+delay(2000);
+}
+*/
+
+void rock(){   // rocks robot back and forth to simulate boredom
+  forward();
+  delay(300);
+  backward();
+  delay(300);
+  forward();
+  delay(300);
+  backward();
+  delay(300);
+  forward();
+  delay(300);
+  backward();
+  delay(300);
+}
+
+void doNothing(){ //halts the robot for one second
+  halt();
+delay(1000);
+}
+
+void setup() {
+  // sets all motor pins on the arduino to output information
+  //rather than take in information
+   myservo.attach(3);  // attach servo on pin 3 to servo object
+   Serial.begin(9600);     
+   pinMode(Echo, INPUT);    
+   pinMode(Trig, OUTPUT);
+   pinMode(enMotorA, OUTPUT);
+   pinMode(enMotorB, OUTPUT);
+   pinMode(motorIn1, OUTPUT);
+   pinMode(motorIn2, OUTPUT);
+   pinMode(motorIn3, OUTPUT);
+   pinMode(motorIn4, OUTPUT);
+  halt();
+}
+
+void loop() {
+  for(int i = 0; i < 3; i++){ // for loop is used to show the robot's boredom functions
+   myservo.write(-60); // positions servo for distance measurement
+   delay(400);
+   distanceRight = distanceTest();
+   Serial.print("distance R: ");
+  Serial.print(distanceRight);
+  Serial.println(" cm");
+   //Serial.print(distanceRight);
+   
+   myservo.write(60); // positions servo for distance measurement
+   delay(400);
+   distanceLeft = distanceTest();
+   Serial.print("distance L: ");
+  Serial.print(distanceLeft);
+  Serial.println(" cm");
+   //Serial.print(distanceLeft);
+   
+   doNothing(); // sets robot into a ready state
+   
+   if((distanceLeft > 200) && (distanceRight > 200)){ // defines parameters in which the robot will be "bored"
+    //halt();
+    if((i + 1) % 2 == 0 ){
+      rock();
+      halt();
+    }else if((i + 1) %2 != 0){
+      drawCircleRight();
+      halt();
+    }else{
+      doNothing();
+      delay(200);
+      halt();
+    }
+    
+   }else if((distanceLeft >= 35) && (distanceRight >= 35)){ // defines when to move foreward
+    forward();
+    delay(2000);
+    halt();
+   }else if ((distanceLeft <  30) && (distanceRight < 30)){ //defines when the robot is close enough 
+    halt();
+    }else if((distanceLeft <= 10 ) && (distanceRight <= 10)){ //defines when the robot needs to reverse away from the stimuli
+    backward();
+    delay(400);
+   }else if(distanceLeft - 5 > distanceRight){ // defines when the stimuli is on the right of the robot
+    right();
+    delay(400);
+    halt();
+   }else if(distanceLeft + 5 < distanceRight){ // defines when the stimuli is on the left of the robot
+   left();
+   delay(400);
+   halt();
+   }else{ // stops the robot in the event of erroneous sensor input
+   halt();
+   //delay(200);
+   }
+  }
+}
